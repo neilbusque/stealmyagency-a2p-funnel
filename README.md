@@ -202,3 +202,22 @@ deploys to Netlify. This build keeps its compliance rules and drops the RIA fram
 Brand tokens were pulled from the live stealmyagency.com stylesheet: blue `#2d62ff`, pink
 `#dd23bb`, black ground, Space Grotesk. The logo is the site's own wordmark, cropped and
 downscaled from 583KB to 87KB.
+
+## Photos (v2 polish, 2026-09-01)
+
+All of Nathan's photos come from Steal My Agency's own published media:
+
+- `nathan.webp` — hero cutout, subject-lifted (macOS Vision framework) from the
+  thumbnail of a video on his own channel, youtube.com/@nathanbentleyofficial
+  (video id `Did3k6Folak`), fringe cleaned with an alpha erode.
+- `nathan-office.jpg` / `nathan-avatar.webp` — the photo of Nathan at his desk that
+  SMA publishes on stealmyagency.com/thankyou (Webflow CDN asset
+  `6672668daa17f1dbeaee6853_image 2026.webp`).
+- `og-card.png` — 1200x630 share card generated from the brand tokens, the wordmark,
+  and the portrait. Referenced by the og:image / twitter:image meta tags.
+
+Two of his other photos were considered and rejected on purpose: the YouTube avatar
+(fanning cash at a microphone) and the Rolls-Royce/Ferrari shot from the homepage
+composite. Carriers treat business-opportunity content as a restricted category, and
+wealth-flex imagery on the opt-in page works against approval. Keep this page's imagery
+work-flavored: him at a desk, him at a microphone.
