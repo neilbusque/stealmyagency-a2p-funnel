@@ -163,17 +163,33 @@ income-claim promos on this campaign is the fastest way to get it revoked after 
 
 ## Redeploying
 
+Vercel's git integration is connected to `neilbusque/stealmyagency-a2p-funnel` with `main`
+as the production branch, so a push is the deploy:
+
 ```bash
 cd ~/Documents/Work/Claude/a2p-sites/stealmyagency
 git add . && git commit -m "describe the change" && git push origin main
-vercel --prod --scope neil-s-team-1825f849
 ```
 
-Vercel's git integration is not connected to this repo, so the `vercel --prod` line is
-what actually ships. After any prod deploy, confirm the alias moved:
+`vercel --prod --scope neil-s-team-1825f849` also works if you need to ship without a
+commit. Either way, confirm the live alias actually moved afterwards:
 
 ```bash
 curl -sI https://stealmyagency-a2p.vercel.app | head -1   # expect HTTP/2 200
+```
+
+### Do not re-enable deployment protection
+
+`ssoProtection` and `passwordProtection` are both set to `null` on this project on purpose.
+New Vercel projects turn Vercel Authentication on by default, which answers 302 to every
+request. A TCR reviewer who hits that sees a login wall instead of the opt-in form, and the
+campaign gets rejected. If the site ever starts 302ing, that setting came back:
+
+```bash
+TOK=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/Library/Application Support/com.vercel.cli/auth.json')))['token'])")
+curl -s -X PATCH -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
+  -d '{"ssoProtection":null,"passwordProtection":null}' \
+  "https://api.vercel.com/v9/projects/stealmyagency-a2p?teamId=team_26oADIWJ5ZLiTNHr199AOPAs"
 ```
 
 ## Source of the build
