@@ -221,3 +221,75 @@ Two of his other photos were considered and rejected on purpose: the YouTube ava
 composite. Carriers treat business-opportunity content as a restricted category, and
 wealth-flex imagery on the opt-in page works against approval. Keep this page's imagery
 work-flavored: him at a desk, him at a microphone.
+
+## Connecting the real domain
+
+The funnel should live on Steal My Agency's own domain before the TCR submission.
+Carriers weigh an opt-in URL on the brand's domain far more heavily than a `.vercel.app`
+one, and a mismatch between the website on the brand record and the opt-in URL is a
+rejection reason on its own.
+
+**Target: `training.stealmyagency.com`**
+
+The apex `stealmyagency.com` and `www` both point at Webflow and serve the main site, so
+they stay exactly as they are. A subdomain is the correct move here, not a migration.
+
+### The two DNS records
+
+`training.stealmyagency.com` is already added to the Vercel project and is waiting on DNS.
+Whoever manages DNS for `stealmyagency.com` needs to add these two records. DNS is on
+Google Cloud DNS (`ns-cloud-a1..a4.googledomains.com`), so this is the Cloud DNS zone in
+Google Cloud Console, under whichever project holds the `stealmyagency.com` zone.
+
+| Type | Name / Host | Value | TTL |
+|---|---|---|---|
+| `TXT` | `_vercel` | `vc-domain-verify=training.stealmyagency.com,f5587fd1de1620f6c08b` | 300 |
+| `CNAME` | `training` | `07800e8bf82db1bd.vercel-dns-016.com.` | 300 |
+
+Notes for whoever adds them:
+
+- In Google Cloud DNS the record names are entered fully qualified, so
+  `_vercel.stealmyagency.com.` and `training.stealmyagency.com.` (trailing dot included).
+- The CNAME value keeps its trailing dot.
+- Neither record touches the apex or `www`. **The main Webflow site is unaffected.**
+- The TXT proves domain ownership to Vercel. It can be deleted once the domain shows as
+  verified, but leaving it costs nothing and avoids a re-verify later.
+- If a `CAA` record exists on the apex, Vercel needs `letsencrypt.org` allowed or the SSL
+  certificate will not issue. Check with `dig +short CAA stealmyagency.com` first. There is
+  no CAA record today, so nothing to do unless one is added later.
+
+### Then run one command
+
+```bash
+cd ~/Documents/Work/Claude/a2p-sites/stealmyagency
+./scripts/connect-domain.sh --check   # status only, changes nothing
+./scripts/connect-domain.sh           # finishes the job
+```
+
+The full run waits for Vercel to report the domain verified, then rewrites every absolute
+URL in the site (canonical, `og:url`, `og:image`, `twitter:image`, `sitemap.xml`, the
+`Sitemap:` line in `robots.txt`) from the `.vercel.app` host to `training.stealmyagency.com`,
+checks each page returns 200 on the new host, commits, and deploys. Internal links are all
+relative, so nothing else has to change.
+
+Vercel issues the SSL certificate automatically once the CNAME resolves, usually within a
+minute or two of propagation. The `.vercel.app` URL keeps working afterwards.
+
+### Last step
+
+Change the opt-in URL in the TCR campaign copy above from
+`https://stealmyagency-a2p.vercel.app` to `https://training.stealmyagency.com`.
+If the campaign has already been submitted, update the website field on the brand and
+campaign records so the site the reviewer visits matches what is registered.
+
+### Message to send the DNS owner
+
+> Hi, I need two DNS records added to stealmyagency.com to point a subdomain at a new
+> landing page. Neither one touches the main site, the apex and www stay on Webflow exactly
+> as they are.
+>
+> 1. TXT record, host `_vercel`, value `vc-domain-verify=training.stealmyagency.com,f5587fd1de1620f6c08b`
+> 2. CNAME record, host `training`, value `07800e8bf82db1bd.vercel-dns-016.com.`
+>
+> DNS is on Google Cloud DNS, so these go in the Cloud DNS zone for stealmyagency.com.
+> TTL 300 is fine for both. Let me know once they are in and I will confirm it resolved.
