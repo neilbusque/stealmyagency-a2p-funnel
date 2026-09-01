@@ -1,0 +1,5 @@
+# TCR / carrier reviewers and search engines must be able to crawl every page.
+User-agent: *
+Allow: /
+
+Sitemap: https://stealmyagency-a2p.vercel.app/sitemap.xml
