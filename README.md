@@ -95,15 +95,13 @@ Paste these straight into the GHL / TCR A2P campaign form.
 
 **Campaign description:**
 
-> Steal My Agency sends SMS messages to people who have explicitly opted in through the
-> registration form at https://stealmyagency-a2p.vercel.app. The form has a separate,
-> optional SMS consent checkbox that is not pre-checked and is not required to submit the
-> form. When a visitor checks that box and submits, we record their consent with a
-> timestamp, IP address, and the exact consent wording shown to them. Messages consist of
-> reminders before a training session the person registered for, the replay link after the
-> session, and follow-up about that same training. Message frequency varies, up to 6
-> messages per month. Every message includes opt-out instructions. Consent to receive SMS
-> is not a condition of purchase or of registering for the training.
+> This Campaign sends low-volume messages from Steal My Agency to individuals who have explicitly opted in via the SMS consent checkbox on our registration form at https://stealmyagency-a2p.vercel.app. That checkbox is optional, is never pre-checked, and is not required to submit the form or to receive anything from us.
+>
+> After opting in, the end user receives text messages relating only to the free educational training they registered for. The experience is: a one-time confirmation that they are subscribed, one or two reminders before the session begins (typically 24 hours and 1 hour prior) containing the join link, a replay link once the session has ended, and occasional follow-up about that same training. Recipients may reply to a message with a question and will receive a response from our team.
+>
+> No messages are sent to anyone who has not opted in, and no numbers are purchased, rented, or shared. Message frequency varies and will not exceed 6 messages per month, sent at low throughput. Every message identifies Steal My Agency and includes opt-out instructions. Replying STOP unsubscribes the recipient immediately and returns a single confirmation, after which no further messages are sent. Replying HELP returns program details and our contact address, nathan@stealmyagency.com. Message and data rates may apply.
+>
+> For each subscriber we store a consent record containing the timestamp, IP address, and the exact consent language displayed at the moment of opt-in. Full program terms are published at https://stealmyagency-a2p.vercel.app/terms-and-conditions.html and https://stealmyagency-a2p.vercel.app/privacy-policy.html.
 
 **Opt-in message:**
 
