@@ -3,7 +3,7 @@
 A publicly crawlable webinar registration funnel built to satisfy TCR (The Campaign
 Registry) and US carrier review for A2P 10DLC SMS campaign registration.
 
-**Live:** https://stealmyagency-a2p.vercel.app
+**Live:** https://training.stealmyagency.com  (`stealmyagency-a2p.vercel.app` still resolves as a fallback)
 **Hosting:** Vercel project `stealmyagency-a2p`, team `neil-s-team-1825f849` (Pro)
 
 ## Pages
@@ -43,7 +43,7 @@ The JSON payload sent to the webhook:
   "phone": "+15555555555", "phoneRaw": "(555) 555-5555",
   "smsConsent": true, "termsConsent": true,
   "source": "stealmyagency-a2p-webinar",
-  "pageUrl": "https://stealmyagency-a2p.vercel.app/",
+  "pageUrl": "https://training.stealmyagency.com/",
   "consent": {
     "version": "2026-09-01",
     "text": "<the exact consent wording shown to the user>",
@@ -95,13 +95,13 @@ Paste these straight into the GHL / TCR A2P campaign form.
 
 **Campaign description:**
 
-> This Campaign sends low-volume messages from Steal My Agency to individuals who have explicitly opted in via the SMS consent checkbox on our registration form at https://stealmyagency-a2p.vercel.app. That checkbox is optional, is never pre-checked, and is not required to submit the form or to receive anything from us.
+> This Campaign sends low-volume messages from Steal My Agency to individuals who have explicitly opted in via the SMS consent checkbox on our registration form at https://training.stealmyagency.com. That checkbox is optional, is never pre-checked, and is not required to submit the form or to receive anything from us.
 >
 > After opting in, the end user receives text messages relating only to the free educational training they registered for. The experience is: a one-time confirmation that they are subscribed, one or two reminders before the session begins (typically 24 hours and 1 hour prior) containing the join link, a replay link once the session has ended, and occasional follow-up about that same training. Recipients may reply to a message with a question and will receive a response from our team.
 >
 > No messages are sent to anyone who has not opted in, and no numbers are purchased, rented, or shared. Message frequency varies and will not exceed 6 messages per month, sent at low throughput. Every message identifies Steal My Agency and includes opt-out instructions. Replying STOP unsubscribes the recipient immediately and returns a single confirmation, after which no further messages are sent. Replying HELP returns program details and our contact address, nathan@stealmyagency.com. Message and data rates may apply.
 >
-> For each subscriber we store a consent record containing the timestamp, IP address, and the exact consent language displayed at the moment of opt-in. Full program terms are published at https://stealmyagency-a2p.vercel.app/terms-and-conditions.html and https://stealmyagency-a2p.vercel.app/privacy-policy.html.
+> For each subscriber we store a consent record containing the timestamp, IP address, and the exact consent language displayed at the moment of opt-in. Full program terms are published at https://training.stealmyagency.com/terms-and-conditions.html and https://training.stealmyagency.com/privacy-policy.html.
 
 **Opt-in message:**
 
@@ -130,7 +130,7 @@ Paste these straight into the GHL / TCR A2P campaign form.
 > texts from us. Reply START to resubscribe.
 
 **Opt-in type:** Web form
-**Opt-in URL:** https://stealmyagency-a2p.vercel.app
+**Opt-in URL:** https://training.stealmyagency.com
 
 **Do NOT tick** "Content related to financial services or other loan arrangement" or any
 "direct lending" box. This is business education, not a financial product, and ticking
@@ -173,7 +173,7 @@ git add . && git commit -m "describe the change" && git push origin main
 commit. Either way, confirm the live alias actually moved afterwards:
 
 ```bash
-curl -sI https://stealmyagency-a2p.vercel.app | head -1   # expect HTTP/2 200
+curl -sI https://training.stealmyagency.com | head -1   # expect HTTP/2 200
 ```
 
 ### Do not re-enable deployment protection
@@ -184,7 +184,9 @@ request. A TCR reviewer who hits that sees a login wall instead of the opt-in fo
 campaign gets rejected. If the site ever starts 302ing, that setting came back:
 
 ```bash
-TOK=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/Library/Application Support/com.vercel.cli/auth.json')))['token'])")
+# This team is busqueneil@gmail.com. Do NOT read the shared Vercel CLI session here:
+# it belongs to whichever account logged in last and 403s on this project.
+TOK=$(tr -d '\n' < ~/.config/neilos-secrets/vercel-calendo.token)
 curl -s -X PATCH -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
   -d '{"ssoProtection":null,"passwordProtection":null}' \
   "https://api.vercel.com/v9/projects/stealmyagency-a2p?teamId=team_26oADIWJ5ZLiTNHr199AOPAs"
@@ -220,67 +222,66 @@ composite. Carriers treat business-opportunity content as a restricted category,
 wealth-flex imagery on the opt-in page works against approval. Keep this page's imagery
 work-flavored: him at a desk, him at a microphone.
 
-## Connecting the real domain
+## The real domain (LIVE as of 2026-09-04)
 
-The funnel should live on Steal My Agency's own domain before the TCR submission.
-Carriers weigh an opt-in URL on the brand's domain far more heavily than a `.vercel.app`
-one, and a mismatch between the website on the brand record and the opt-in URL is a
-rejection reason on its own.
+The funnel runs on **https://training.stealmyagency.com**. Carriers weigh an opt-in URL on
+the brand's own domain far more heavily than a `.vercel.app` one, and a mismatch between
+the website on the brand record and the opt-in URL is a rejection reason by itself.
 
-**Target: `training.stealmyagency.com`**
+The apex `stealmyagency.com` and `www` are untouched and still serve the Webflow site.
 
-The apex `stealmyagency.com` and `www` both point at Webflow and serve the main site, so
-they stay exactly as they are. A subdomain is the correct move here, not a migration.
+**What is in place:**
 
-### The two DNS records
-
-`training.stealmyagency.com` is already added to the Vercel project and is waiting on DNS.
-Whoever manages DNS for `stealmyagency.com` needs to add these two records. DNS is on
-Google Cloud DNS (`ns-cloud-a1..a4.googledomains.com`), so this is the Cloud DNS zone in
-Google Cloud Console, under whichever project holds the `stealmyagency.com` zone.
-
-| Type | Name / Host | Value | TTL |
+| Type | Name | Value | Status |
 |---|---|---|---|
-| `TXT` | `_vercel` | `vc-domain-verify=training.stealmyagency.com,f5587fd1de1620f6c08b` | 300 |
-| `CNAME` | `training` | `07800e8bf82db1bd.vercel-dns-016.com.` | 300 |
+| `TXT` | `_vercel.stealmyagency.com` | `vc-domain-verify=training.stealmyagency.com,f5587fd1de1620f6c08b` | live, verified |
+| `CNAME` | `training.stealmyagency.com` | `07800e8bf82db1bd.vercel-dns-016.com.` | live, `misconfigured: false` |
 
-Notes for whoever adds them:
+SSL issued automatically (Let's Encrypt, no CAA record on the apex blocking it). Every
+absolute URL in the site (canonical, `og:url`, `og:image`, `twitter:image`, `sitemap.xml`,
+the `Sitemap:` line in `robots.txt`) now points at the custom domain. All four pages plus
+`og-card.png` return 200 on it, and `POST /api/optin` returns `{"ok":true}`.
 
-- In Google Cloud DNS the record names are entered fully qualified, so
-  `_vercel.stealmyagency.com.` and `training.stealmyagency.com.` (trailing dot included).
-- The CNAME value keeps its trailing dot.
-- Neither record touches the apex or `www`. **The main Webflow site is unaffected.**
-- The TXT proves domain ownership to Vercel. It can be deleted once the domain shows as
-  verified, but leaving it costs nothing and avoids a re-verify later.
-- If a `CAA` record exists on the apex, Vercel needs `letsencrypt.org` allowed or the SSL
-  certificate will not issue. Check with `dig +short CAA stealmyagency.com` first. There is
-  no CAA record today, so nothing to do unless one is added later.
+The `.vercel.app` host keeps working as a fallback.
 
-### Then run one command
+### Two traps this hit on the way in
+
+**1. The Vercel CLI session belongs to whichever account logged in last.** This project is
+in team `neil-s-team-1825f849`, which is **busqueneil@gmail.com**. The shared CLI session at
+`~/Library/Application Support/com.vercel.cli/auth.json` had been taken over by
+`neil@pyreai.com`, so every API call 403'd. The working token is
+`~/.config/neilos-secrets/vercel-calendo.token` (same account, named for the other project
+it was minted for). `connect-domain.sh` now probes every token in that directory and picks
+one that can actually see the project, and prints which account it used.
+
+**2. A 403 read as "DNS not propagated".** The old script did `.get('verified')` on the API
+response without checking for an `error` key, so an auth failure printed
+"not verified yet (DNS can take up to an hour)" — pointing at DNS that had been correct all
+along. It now surfaces API errors as errors. It also POSTs the verify endpoint instead of
+waiting for Vercel to re-check the TXT record on its own, which is what actually flipped
+`verified` here.
+
+### Re-running the script
 
 ```bash
 cd ~/Documents/Work/Claude/a2p-sites/stealmyagency
 ./scripts/connect-domain.sh --check   # status only, changes nothing
-./scripts/connect-domain.sh           # finishes the job
+./scripts/connect-domain.sh           # idempotent: safe to re-run
 ```
 
-The full run waits for Vercel to report the domain verified, then rewrites every absolute
-URL in the site (canonical, `og:url`, `og:image`, `twitter:image`, `sitemap.xml`, the
-`Sitemap:` line in `robots.txt`) from the `.vercel.app` host to `training.stealmyagency.com`,
-checks each page returns 200 on the new host, commits, and deploys. Internal links are all
-relative, so nothing else has to change.
+### Remaining step for TCR
 
-Vercel issues the SSL certificate automatically once the CNAME resolves, usually within a
-minute or two of propagation. The `.vercel.app` URL keeps working afterwards.
+The opt-in URL in the campaign copy above is now `https://training.stealmyagency.com`. If
+the campaign or brand was already submitted with the `.vercel.app` URL, **update the website
+field on both the brand and campaign records** so the site the reviewer visits matches what
+is registered. The three fields Nathan still owes (business phone, registered legal entity
+name, governing-law state) are unchanged and still block submission.
 
-### Last step
+### The request that was sent to the DNS owner
 
-Change the opt-in URL in the TCR campaign copy above from
-`https://stealmyagency-a2p.vercel.app` to `https://training.stealmyagency.com`.
-If the campaign has already been submitted, update the website field on the brand and
-campaign records so the site the reviewer visits matches what is registered.
-
-### Message to send the DNS owner
+Kept for reference. **These records are already in place** — do not re-send this. DNS for
+`stealmyagency.com` is Google Cloud DNS (`ns-cloud-a1..a4.googledomains.com`) under SMA's
+own GCP account, so Neil cannot edit it himself; Nathan or their web person has to.
 
 > Hi, I need two DNS records added to stealmyagency.com to point a subdomain at a new
 > landing page. Neither one touches the main site, the apex and www stay on Webflow exactly
