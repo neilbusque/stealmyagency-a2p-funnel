@@ -89,6 +89,11 @@ Name the actual state when you know it. TCR does not check this, but a lawyer wo
 
 ## TCR campaign registration copy
 
+**The full, current field set for Low Volume Mixed lives in [`TCR-SUBMISSION.md`](TCR-SUBMISSION.md)** —
+campaign description (long + short), message flow / CTA, five sample messages, keywords and
+auto-replies, and the tick / do-not-tick table. Use that file; the summary below is kept for
+context.
+
 Paste these straight into the GHL / TCR A2P campaign form.
 
 **Use case:** Low Volume Mixed
