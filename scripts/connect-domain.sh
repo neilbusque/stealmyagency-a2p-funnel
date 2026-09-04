@@ -22,7 +22,38 @@ TEAM_SLUG="neil-s-team-1825f849"
 
 cd "$(dirname "$0")/.."
 
-TOK=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/Library/Application Support/com.vercel.cli/auth.json')))['token'])")
+# Pick a token that can actually see this project. The shared Vercel CLI session
+# (~/Library/Application Support/com.vercel.cli/auth.json) belongs to whichever
+# account logged in last, so it is the LAST resort, not the first: when it holds a
+# different account every API call here 403s.
+resolve_token(){
+  local cands=()
+  [ -n "${VERCEL_TOKEN:-}" ] && cands+=("$VERCEL_TOKEN")
+  local f
+  for f in "$HOME"/.config/neilos-secrets/vercel-*.token; do
+    [ -f "$f" ] && cands+=("$(tr -d '\n' < "$f")")
+  done
+  local cli="$HOME/Library/Application Support/com.vercel.cli/auth.json"
+  [ -f "$cli" ] && cands+=("$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['token'])" "$cli" 2>/dev/null || true)")
+  local t
+  for t in "${cands[@]}"; do
+    [ -z "$t" ] && continue
+    if curl -s --max-time 20 -H "Authorization: Bearer $t" \
+         "https://api.vercel.com/v9/projects/$PROJECT?teamId=$TEAM_ID" \
+         | grep -q '"name"'; then
+      printf '%s' "$t"; return 0
+    fi
+  done
+  return 1
+}
+
+if ! TOK=$(resolve_token); then
+  echo "No Vercel token on this machine can see $PROJECT in $TEAM_SLUG." >&2
+  echo "That team is busqueneil@gmail.com. Export VERCEL_TOKEN for that account and re-run." >&2
+  exit 1
+fi
+WHO=$(curl -s --max-time 20 -H "Authorization: Bearer $TOK" https://api.vercel.com/v2/user \
+      | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('user',d).get('email','?'))" 2>/dev/null || echo '?')
 
 say(){ printf '\n\033[1m%s\033[0m\n' "$1"; }
 ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; }
@@ -35,17 +66,43 @@ if echo "$TXT" | grep -q "f5587fd1de1620f6c08b"; then ok "TXT _vercel.$APEX foun
 CN=$(dig +short CNAME "$DOMAIN")
 if [ -n "$CN" ]; then ok "CNAME $DOMAIN -> $CN"; else no "CNAME $DOMAIN missing"; fi
 
-say "2. Vercel verification"
-VER=$(curl -s --max-time 30 -H "Authorization: Bearer $TOK" \
-  "https://api.vercel.com/v9/projects/$PROJECT/domains/$DOMAIN?teamId=$TEAM_ID" \
-  | python3 -c "import sys,json;print(json.load(sys.stdin).get('verified'))")
-if [ "$VER" = "True" ]; then ok "Vercel reports verified"; else no "not verified yet (DNS can take up to an hour)"; fi
+say "2. Vercel verification (as $WHO)"
+# Reads 'verified' but surfaces an API error as an error. Reporting a 403 as
+# "not verified yet" sends you looking at DNS that was fine all along.
+read_verified(){
+  curl -s --max-time 30 -H "Authorization: Bearer $TOK" \
+    "https://api.vercel.com/v9/projects/$PROJECT/domains/$DOMAIN?teamId=$TEAM_ID" \
+  | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+if 'error' in d:
+    print('API-ERROR: '+d['error'].get('code','?')+' '+d['error'].get('message',''))
+else:
+    print('true' if d.get('verified') else 'false')"
+}
+
+VER=$(read_verified)
+case "$VER" in
+  API-ERROR*) no "$VER"; VER=false ;;
+  true)  ok "Vercel reports verified" ;;
+  false)
+    # The TXT record can be live while Vercel has not re-checked it. Ask it to.
+    if echo "$TXT" | grep -q "f5587fd1de1620f6c08b"; then
+      no "not verified yet - triggering a verify now"
+      curl -s -X POST --max-time 30 -H "Authorization: Bearer $TOK" \
+        "https://api.vercel.com/v9/projects/$PROJECT/domains/$DOMAIN/verify?teamId=$TEAM_ID" >/dev/null || true
+      VER=$(read_verified)
+      [ "$VER" = "true" ] && ok "verified after trigger" || no "still not verified (DNS can take up to an hour)"
+    else
+      no "not verified yet - the TXT record is not visible in DNS"
+    fi ;;
+esac
 
 if [ "${1:-}" = "--check" ]; then
   say "check only, nothing changed"; exit 0
 fi
 
-if [ "$VER" != "True" ]; then
+if [ "$VER" != "true" ]; then
   say "Stopping: domain is not verified yet."
   echo "  Re-run once the records have propagated. Nothing was changed."
   exit 1
@@ -69,6 +126,10 @@ say "5. Commit and deploy"
 git add -A
 git commit -q -m "Point canonical, OG, sitemap and robots at $DOMAIN" || echo "  (nothing to commit)"
 git push -q origin main
-vercel --prod --yes --scope "$TEAM_SLUG" >/dev/null 2>&1 && ok "deployed"
+if vercel --prod --yes --token "$TOK" --scope "$TEAM_SLUG" >/tmp/a2p-deploy.log 2>&1; then
+  ok "deployed"
+else
+  no "deploy FAILED - see /tmp/a2p-deploy.log"; tail -20 /tmp/a2p-deploy.log; exit 1
+fi
 
 say "Done. Update the TCR campaign's opt-in URL to https://$DOMAIN"

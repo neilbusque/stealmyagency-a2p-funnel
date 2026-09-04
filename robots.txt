@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://stealmyagency-a2p.vercel.app/sitemap.xml
+Sitemap: https://training.stealmyagency.com/sitemap.xml
